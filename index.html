@@ -671,9 +671,8 @@
         let userActivityChartInstance = null;
         let bettingChartInstance = null;
 
-        // Data storage keys - UPDATED TO MATCH GAME
+        // Data storage keys
         const STORAGE_KEYS = {
-            currentUser: 'wavewin_current_user',
             users: 'wavewin_users',
             withdrawals: 'wavewin_withdrawals',
             deposits: 'wavewin_deposits',
@@ -681,7 +680,7 @@
             bets: 'wavewin_bets',
             results: 'wavewin_game_results',
             adminControls: 'wavewin_admin_controls',
-            withdrawalUpdates: 'wavewin_withdrawal_updates'
+            adminSession: 'wavewin_admin_session'
         };
 
         // Admin credentials
@@ -689,7 +688,7 @@
             '9934406008': 'admin123'
         };
 
-        // Data Management - UPDATED TO MATCH GAME
+        // Data Management
         class DataManager {
             static setData(key, data) {
                 try {
@@ -728,37 +727,18 @@
                         }
                     }
                 }
-                
-                // Fallback to users array if no individual user keys found
-                if (users.length === 0) {
-                    const usersObj = this.getData(STORAGE_KEYS.users) || {};
-                    return Object.values(usersObj);
-                }
-                
                 return users;
             }
 
             static getUserByPhone(phone) {
-                // First try to get from specific user key
-                const user = this.getData('wavewin_user_' + phone);
-                if (user) return user;
-                
-                // Fallback to users array (for backward compatibility)
-                const users = this.getData(STORAGE_KEYS.users) || {};
-                return users[phone] || null;
+                return this.getData('wavewin_user_' + phone);
             }
 
             static updateUser(phone, updates) {
                 const user = this.getUserByPhone(phone);
                 if (user) {
                     Object.assign(user, updates);
-                    // Save in both specific key and users array
                     this.setData('wavewin_user_' + phone, user);
-                    
-                    const users = this.getData(STORAGE_KEYS.users) || {};
-                    users[phone] = user;
-                    this.setData(STORAGE_KEYS.users, users);
-                    
                     return true;
                 }
                 return false;
@@ -778,9 +758,6 @@
 
                     demoUsers.forEach(user => {
                         this.setData('wavewin_user_' + user.phone, user);
-                        const users = this.getData(STORAGE_KEYS.users) || {};
-                        users[user.phone] = user;
-                        this.setData(STORAGE_KEYS.users, users);
                     });
                 }
 
@@ -815,21 +792,15 @@
                 if (deposits.length === 0) {
                     const demoDeposits = [
                         {
-                            id: 'd1',
                             name: 'Mike Johnson',
-                            phone: '9876543212',
                             amount: 2000,
                             utr: 'UTR123456789',
-                            status: 'completed',
                             date: new Date().toLocaleDateString()
                         },
                         {
-                            id: 'd2',
                             name: 'Sarah Wilson',
-                            phone: '9876543213',
                             amount: 1500,
                             utr: 'UTR987654321',
-                            status: 'completed',
                             date: new Date().toLocaleDateString()
                         }
                     ];
@@ -841,31 +812,21 @@
                 if (bets.length === 0) {
                     const demoBets = [
                         {
-                            id: 'b1',
                             period: '20241201001',
-                            phone: '9876543210',
                             playerName: 'John Doe',
-                            type: 'color',
-                            value: 'red',
+                            type: 'red',
                             amount: 100,
-                            multiplier: 1.96,
                             status: 'win',
-                            winAmount: 196,
-                            result: 2,
+                            winAmount: 200,
                             date: new Date().toISOString()
                         },
                         {
-                            id: 'b2',
                             period: '20241201002',
-                            phone: '9876543211',
                             playerName: 'Jane Smith',
-                            type: 'color',
-                            value: 'green',
+                            type: 'green',
                             amount: 200,
-                            multiplier: 1.96,
                             status: 'loss',
                             winAmount: 0,
-                            result: 2,
                             date: new Date().toISOString()
                         }
                     ];
@@ -892,31 +853,6 @@
                         }
                     ];
                     this.setData(STORAGE_KEYS.results, demoResults);
-                }
-
-                // Create demo gift codes
-                const giftCodes = this.getData(STORAGE_KEYS.giftCodes) || {};
-                if (Object.keys(giftCodes).length === 0) {
-                    const demoGiftCodes = {
-                        'WELCOME100': {
-                            name: 'Welcome Bonus',
-                            amount: 100,
-                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                            created: new Date().toISOString(),
-                            used: false,
-                            usedBy: null
-                        },
-                        'VIP500': {
-                            name: 'VIP Bonus',
-                            amount: 500,
-                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                            created: new Date().toISOString(),
-                            used: true,
-                            usedBy: '9876543210',
-                            usedDate: new Date().toISOString()
-                        }
-                    };
-                    this.setData(STORAGE_KEYS.giftCodes, demoGiftCodes);
                 }
             }
         }
@@ -981,10 +917,14 @@
             setInterval(updateTime, 1000);
             
             // Check if already logged in
-            const savedAdmin = localStorage.getItem('wavewin_admin_session');
+            const savedAdmin = localStorage.getItem(STORAGE_KEYS.adminSession);
             if (savedAdmin) {
-                currentAdmin = JSON.parse(savedAdmin);
-                showDashboard();
+                try {
+                    currentAdmin = JSON.parse(savedAdmin);
+                    showDashboard();
+                } catch (e) {
+                    console.error('Error parsing admin session:', e);
+                }
             }
         }
 
@@ -1058,7 +998,7 @@
 
             if (ADMIN_CREDENTIALS[phone] === password) {
                 currentAdmin = { phone, name: 'Admin' };
-                localStorage.setItem('wavewin_admin_session', JSON.stringify(currentAdmin));
+                localStorage.setItem(STORAGE_KEYS.adminSession, JSON.stringify(currentAdmin));
                 
                 errorElement.classList.add('hidden');
                 showDashboard();
@@ -1071,7 +1011,7 @@
 
         // Handle logout
         function handleLogout() {
-            localStorage.removeItem('wavewin_admin_session');
+            localStorage.removeItem(STORAGE_KEYS.adminSession);
             currentAdmin = null;
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('adminDashboard').classList.add('hidden');
@@ -1335,21 +1275,6 @@
             
             DataManager.updateUser(selectedUserPhone, { balance: newBalance });
             
-            // Create transaction record
-            const transaction = {
-                type: action === 'add' ? 'admin_add' : 'admin_subtract',
-                amount: amount,
-                date: new Date().toISOString(),
-                admin: currentAdmin.phone,
-                notes: `Balance ${action}ed by admin`
-            };
-            
-            if (!user.transactions) {
-                user.transactions = [];
-            }
-            user.transactions.push(transaction);
-            DataManager.updateUser(selectedUserPhone, { transactions: user.transactions });
-            
             document.getElementById('balanceModal').classList.add('hidden');
             NotificationManager.success(`Balance ${action === 'add' ? 'added' : 'subtracted'} successfully`);
             loadUsers();
@@ -1407,16 +1332,15 @@
                 withdrawal.status = 'approved';
                 DataManager.setData(STORAGE_KEYS.withdrawals, withdrawals);
                 
-                // Create withdrawal update notification for the game
-                const updates = DataManager.getData(STORAGE_KEYS.withdrawalUpdates) || [];
+                // Create update notification for user
+                const updates = DataManager.getData('wavewin_withdrawal_updates') || [];
                 updates.push({
                     phone: withdrawal.phone,
-                    id: withdrawal.id,
-                    status: 'approved',
                     amount: withdrawal.amount,
+                    status: 'approved',
                     timestamp: Date.now()
                 });
-                DataManager.setData(STORAGE_KEYS.withdrawalUpdates, updates);
+                DataManager.setData('wavewin_withdrawal_updates', updates);
                 
                 NotificationManager.success('Withdrawal approved successfully');
                 loadWithdrawals();
@@ -1439,32 +1363,17 @@
                     DataManager.updateUser(withdrawal.phone, { 
                         balance: user.balance + withdrawal.amount 
                     });
-                    
-                    // Create transaction record
-                    const transaction = {
-                        type: 'withdrawal_refund',
-                        amount: withdrawal.amount,
-                        date: new Date().toISOString(),
-                        notes: 'Withdrawal rejected and refunded'
-                    };
-                    
-                    if (!user.transactions) {
-                        user.transactions = [];
-                    }
-                    user.transactions.push(transaction);
-                    DataManager.updateUser(withdrawal.phone, { transactions: user.transactions });
                 }
                 
-                // Create withdrawal update notification for the game
-                const updates = DataManager.getData(STORAGE_KEYS.withdrawalUpdates) || [];
+                // Create update notification for user
+                const updates = DataManager.getData('wavewin_withdrawal_updates') || [];
                 updates.push({
                     phone: withdrawal.phone,
-                    id: withdrawal.id,
-                    status: 'rejected',
                     amount: withdrawal.amount,
+                    status: 'rejected',
                     timestamp: Date.now()
                 });
-                DataManager.setData(STORAGE_KEYS.withdrawalUpdates, updates);
+                DataManager.setData('wavewin_withdrawal_updates', updates);
                 
                 NotificationManager.success('Withdrawal rejected and amount refunded');
                 loadWithdrawals();
@@ -1740,7 +1649,7 @@
                 row.innerHTML = `
                     <td class="py-3 px-4 text-white">${bet.period}</td>
                     <td class="py-3 px-4 text-white">${bet.playerName}</td>
-                    <td class="py-3 px-4 text-white">${bet.type.toUpperCase()}: ${bet.value}</td>
+                    <td class="py-3 px-4 text-white">${bet.type.toUpperCase()}</td>
                     <td class="py-3 px-4 text-white">₹${bet.amount.toFixed(2)}</td>
                     <td class="py-3 px-4">
                         <span class="${statusClass} px-2 py-1 rounded-full text-xs">${bet.status.toUpperCase()}</span>
