@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wave Win By NRS - Complete Control System</title>
+    <title>Wavewin Admin Panel - Complete Control System</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -679,8 +679,7 @@
             giftCodes: 'wavewin_gift_codes',
             bets: 'wavewin_bets',
             results: 'wavewin_game_results',
-            adminControls: 'wavewin_admin_controls',
-            adminSession: 'wavewin_admin_session'
+            adminControls: 'wavewin_admin_controls'
         };
 
         // Admin credentials
@@ -739,9 +738,7 @@
                 if (user) {
                     Object.assign(user, updates);
                     this.setData('wavewin_user_' + phone, user);
-                    return true;
                 }
-                return false;
             }
 
             static createDemoData() {
@@ -917,14 +914,10 @@
             setInterval(updateTime, 1000);
             
             // Check if already logged in
-            const savedAdmin = localStorage.getItem(STORAGE_KEYS.adminSession);
+            const savedAdmin = localStorage.getItem('wavewin_admin_session');
             if (savedAdmin) {
-                try {
-                    currentAdmin = JSON.parse(savedAdmin);
-                    showDashboard();
-                } catch (e) {
-                    console.error('Error parsing admin session:', e);
-                }
+                currentAdmin = JSON.parse(savedAdmin);
+                showDashboard();
             }
         }
 
@@ -998,7 +991,7 @@
 
             if (ADMIN_CREDENTIALS[phone] === password) {
                 currentAdmin = { phone, name: 'Admin' };
-                localStorage.setItem(STORAGE_KEYS.adminSession, JSON.stringify(currentAdmin));
+                localStorage.setItem('wavewin_admin_session', JSON.stringify(currentAdmin));
                 
                 errorElement.classList.add('hidden');
                 showDashboard();
@@ -1011,7 +1004,7 @@
 
         // Handle logout
         function handleLogout() {
-            localStorage.removeItem(STORAGE_KEYS.adminSession);
+            localStorage.removeItem('wavewin_admin_session');
             currentAdmin = null;
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('adminDashboard').classList.add('hidden');
@@ -1332,16 +1325,6 @@
                 withdrawal.status = 'approved';
                 DataManager.setData(STORAGE_KEYS.withdrawals, withdrawals);
                 
-                // Create update notification for user
-                const updates = DataManager.getData('wavewin_withdrawal_updates') || [];
-                updates.push({
-                    phone: withdrawal.phone,
-                    amount: withdrawal.amount,
-                    status: 'approved',
-                    timestamp: Date.now()
-                });
-                DataManager.setData('wavewin_withdrawal_updates', updates);
-                
                 NotificationManager.success('Withdrawal approved successfully');
                 loadWithdrawals();
                 loadDashboardData();
@@ -1364,16 +1347,6 @@
                         balance: user.balance + withdrawal.amount 
                     });
                 }
-                
-                // Create update notification for user
-                const updates = DataManager.getData('wavewin_withdrawal_updates') || [];
-                updates.push({
-                    phone: withdrawal.phone,
-                    amount: withdrawal.amount,
-                    status: 'rejected',
-                    timestamp: Date.now()
-                });
-                DataManager.setData('wavewin_withdrawal_updates', updates);
                 
                 NotificationManager.success('Withdrawal rejected and amount refunded');
                 loadWithdrawals();
