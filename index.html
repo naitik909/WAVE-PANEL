@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wavewin Admin Panel - Complete Control System</title>
+    <title>Wavewin Admin Panel - Complete Fixed System</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -49,6 +49,10 @@
         .status-rejected {
             background-color: #fecaca;
             color: #991b1b;
+        }
+        .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
         }
         .loading {
             animation: spin 1s linear infinite;
@@ -130,14 +134,62 @@
         .overlay.show {
             display: block;
         }
+        .bet-type-red {
+            background: linear-gradient(135deg, #e60000, #ff3333);
+            color: white;
+        }
+        .bet-type-green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .bet-type-violet {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+        .bet-type-number {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        .bet-type-size {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        .realtime-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            animation: pulse 2s infinite;
+        }
+        .transaction-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+            border-left: 4px solid #10b981;
+        }
+        .withdrawal-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
+            border-left: 4px solid #ef4444;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
+    <!-- Real-time Indicator -->
+    <div class="realtime-indicator">
+        <i class="fas fa-wifi mr-2"></i>
+        <span>Real-time Sync Active</span>
+    </div>
+
     <!-- Notification -->
     <div id="notification" class="fixed top-4 right-4 z-50 hidden">
-        <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg notification">
-            <i class="fas fa-check-circle mr-2"></i>
-            <span id="notificationText">Success!</span>
+        <div class="notification">
+            <div id="notificationContent" class="px-6 py-3 rounded-lg shadow-lg">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span id="notificationText">Success!</span>
+            </div>
         </div>
     </div>
 
@@ -151,17 +203,20 @@
                 <i class="fas fa-shield-alt text-6xl text-red-500 mb-4"></i>
                 <h1 class="text-3xl font-bold gradient-text">WAVEWIN</h1>
                 <p class="text-gray-400">Admin Panel Access</p>
+                <div class="mt-4 text-sm text-gray-500">
+                    Default Admin: 9934406008 / admin123
+                </div>
             </div>
             
             <div class="space-y-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-                    <input type="text" id="adminPhone" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-red-500 focus:outline-none text-white" placeholder="Enter admin phone">
+                    <input type="text" id="adminPhone" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-red-500 focus:outline-none text-white" placeholder="Enter admin phone" value="9934406008">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <input type="password" id="adminPassword" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-red-500 focus:outline-none text-white" placeholder="Enter admin password">
+                    <input type="password" id="adminPassword" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-red-500 focus:outline-none text-white" placeholder="Enter admin password" value="admin123">
                 </div>
                 
                 <div id="loginError" class="text-red-400 text-sm hidden">
@@ -184,6 +239,10 @@
             <div class="text-center mb-8">
                 <i class="fas fa-water text-4xl text-red-500 mb-2"></i>
                 <h2 class="text-xl font-bold gradient-text">WAVEWIN ADMIN</h2>
+                <div class="text-xs text-gray-400 mt-2">
+                    <i class="fas fa-circle text-green-400 mr-1"></i>
+                    <span id="onlineUsersCount">0</span> users online
+                </div>
             </div>
             
             <nav class="space-y-2">
@@ -207,13 +266,17 @@
                     <i class="fas fa-gamepad mr-3"></i>
                     Game Control
                 </a>
+                <a href="#" class="nav-item flex items-center px-4 py-3 text-white rounded-lg transition duration-200" data-tab="today-bets">
+                    <i class="fas fa-calendar-day mr-3"></i>
+                    Today's Bets
+                </a>
                 <a href="#" class="nav-item flex items-center px-4 py-3 text-white rounded-lg transition duration-200" data-tab="giftcodes">
                     <i class="fas fa-gift mr-3"></i>
                     Gift Codes
                 </a>
                 <a href="#" class="nav-item flex items-center px-4 py-3 text-white rounded-lg transition duration-200" data-tab="bets">
                     <i class="fas fa-chart-line mr-3"></i>
-                    Betting Activity
+                    All Betting Activity
                 </a>
             </nav>
             
@@ -253,6 +316,10 @@
                         <div class="text-sm text-gray-400">
                             <i class="fas fa-user mr-1"></i>
                             <span id="adminName">Admin</span>
+                        </div>
+                        <div class="text-sm text-green-400">
+                            <i class="fas fa-circle mr-1"></i>
+                            <span id="desktopOnlineUsers">0</span> online
                         </div>
                     </div>
                 </div>
@@ -311,6 +378,31 @@
                     </div>
                 </div>
 
+                <!-- Recent Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Recent Deposits -->
+                    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-4">
+                            <i class="fas fa-plus-circle text-green-400 mr-2"></i>
+                            Recent Deposits
+                        </h3>
+                        <div id="recentDeposits" class="space-y-3">
+                            <!-- Recent deposits will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Withdrawals -->
+                    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-4">
+                            <i class="fas fa-minus-circle text-red-400 mr-2"></i>
+                            Recent Withdrawals
+                        </h3>
+                        <div id="recentWithdrawals" class="space-y-3">
+                            <!-- Recent withdrawals will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -349,7 +441,8 @@
                                     <th class="text-left py-3 px-4 text-gray-300">Name</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Phone</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Balance</th>
-                                    <th class="text-left py-3 px-4 text-gray-300">Status</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Total Bets</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Join Date</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Actions</th>
                                 </tr>
                             </thead>
@@ -366,9 +459,17 @@
                 <div class="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
                         <h3 class="text-lg font-semibold text-white">Withdrawal Requests</h3>
-                        <button id="refreshWithdrawals" class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-sync-alt mr-2"></i>Refresh
-                        </button>
+                        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                            <select id="withdrawalStatusFilter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button id="refreshWithdrawals" class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -377,6 +478,7 @@
                                 <tr class="border-b border-gray-600">
                                     <th class="text-left py-3 px-4 text-gray-300">Date</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Player</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Phone</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Amount</th>
                                     <th class="text-left py-3 px-4 text-gray-300">UPI ID</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Status</th>
@@ -396,9 +498,12 @@
                 <div class="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
                         <h3 class="text-lg font-semibold text-white">Deposit History</h3>
-                        <button id="refreshDeposits" class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-sync-alt mr-2"></i>Refresh
-                        </button>
+                        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                            <input type="date" id="depositDateFilter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
+                            <button id="refreshDeposits" class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="overflow-x-auto">
@@ -407,9 +512,11 @@
                                 <tr class="border-b border-gray-600">
                                     <th class="text-left py-3 px-4 text-gray-300">Date</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Player</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Phone</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Amount</th>
                                     <th class="text-left py-3 px-4 text-gray-300">UTR Number</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Status</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Time</th>
                                 </tr>
                             </thead>
                             <tbody id="depositsTableBody">
@@ -441,6 +548,10 @@
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-300">Active Bets:</span>
                                 <span class="font-bold text-green-400" id="activeBets">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-300">Control Mode:</span>
+                                <span class="font-bold text-blue-400" id="controlMode">AUTO</span>
                             </div>
                         </div>
                     </div>
@@ -493,10 +604,96 @@
                                     <th class="text-left py-3 px-4 text-gray-300">Color</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Size</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Time</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Bets</th>
                                 </tr>
                             </thead>
                             <tbody id="resultsTableBody">
                                 <!-- Results will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Bets Tab -->
+            <div id="today-betsTab" class="tab-content hidden">
+                <!-- Today's Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="stat-card rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-white" id="todayTotalBets">0</div>
+                        <div class="text-sm text-gray-400">Total Bets</div>
+                    </div>
+                    <div class="stat-card rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-green-400" id="todayTotalAmount">₹0</div>
+                        <div class="text-sm text-gray-400">Total Amount</div>
+                    </div>
+                    <div class="stat-card rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-red-400" id="todayWinAmount">₹0</div>
+                        <div class="text-sm text-gray-400">Win Amount</div>
+                    </div>
+                    <div class="stat-card rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-blue-400" id="todayProfit">₹0</div>
+                        <div class="text-sm text-gray-400">Profit</div>
+                    </div>
+                </div>
+
+                <!-- Betting Analysis -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Bet Type Distribution -->
+                    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-4">Bet Type Distribution</h3>
+                        <div style="height: 300px;">
+                            <canvas id="betTypeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Betting Activity -->
+                    <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                        <h3 class="text-lg font-semibold text-white mb-4">Hourly Activity</h3>
+                        <div style="height: 300px;">
+                            <canvas id="hourlyActivityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Detailed Bets -->
+                <div class="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
+                        <h3 class="text-lg font-semibold text-white">Today's Detailed Bets</h3>
+                        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                            <select id="todayBetStatusFilter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="win">Won</option>
+                                <option value="loss">Lost</option>
+                            </select>
+                            <select id="todayBetTypeFilter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
+                                <option value="">All Types</option>
+                                <option value="color">Color</option>
+                                <option value="number">Number</option>
+                                <option value="size">Size</option>
+                            </select>
+                            <button id="refreshTodayBets" class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-600">
+                                    <th class="text-left py-3 px-4 text-gray-300">Period</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Player</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Bet Details</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Amount</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Status</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Win Amount</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayBetsTableBody">
+                                <!-- Today's bets will be loaded here -->
                             </tbody>
                         </table>
                     </div>
@@ -549,6 +746,10 @@
                                 <span class="text-gray-300">Total Value:</span>
                                 <span class="font-semibold text-white" id="totalGiftValue">₹0</span>
                             </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Redeemed Value:</span>
+                                <span class="font-semibold text-white" id="redeemedGiftValue">₹0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -571,6 +772,7 @@
                                     <th class="text-left py-3 px-4 text-gray-300">Status</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Used By</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Created</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Expiry</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Actions</th>
                                 </tr>
                             </thead>
@@ -582,11 +784,11 @@
                 </div>
             </div>
 
-            <!-- Bets Tab -->
+            <!-- All Bets Tab -->
             <div id="betsTab" class="tab-content hidden">
                 <div class="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
-                        <h3 class="text-lg font-semibold text-white">Betting Activity</h3>
+                        <h3 class="text-lg font-semibold text-white">All Betting Activity</h3>
                         <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
                             <select id="betStatusFilter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
                                 <option value="">All Status</option>
@@ -594,6 +796,7 @@
                                 <option value="win">Won</option>
                                 <option value="loss">Lost</option>
                             </select>
+                            <input type="text" id="betPlayerSearch" placeholder="Search player..." class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-full md:w-auto">
                             <button id="refreshBets" class="btn-primary text-white px-4 py-2 rounded-lg">
                                 <i class="fas fa-sync-alt mr-2"></i>Refresh
                             </button>
@@ -606,11 +809,11 @@
                                 <tr class="border-b border-gray-600">
                                     <th class="text-left py-3 px-4 text-gray-300">Period</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Player</th>
-                                    <th class="text-left py-3 px-4 text-gray-300">Bet Type</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Bet Details</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Amount</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Status</th>
                                     <th class="text-left py-3 px-4 text-gray-300">Win Amount</th>
-                                    <th class="text-left py-3 px-4 text-gray-300">Time</th>
+                                    <th class="text-left py-3 px-4 text-gray-300">Date</th>
                                 </tr>
                             </thead>
                             <tbody id="betsTableBody">
@@ -670,6 +873,10 @@
         let currentAdmin = null;
         let userActivityChartInstance = null;
         let bettingChartInstance = null;
+        let betTypeChartInstance = null;
+        let hourlyActivityChartInstance = null;
+        let gameTimer = null;
+        let onlineUsersCount = 0;
 
         // Data storage keys
         const STORAGE_KEYS = {
@@ -679,7 +886,8 @@
             giftCodes: 'wavewin_gift_codes',
             bets: 'wavewin_bets',
             results: 'wavewin_game_results',
-            adminControls: 'wavewin_admin_controls'
+            adminControls: 'wavewin_admin_controls',
+            userSessions: 'wavewin_user_sessions'
         };
 
         // Admin credentials
@@ -687,7 +895,7 @@
             '9934406008': 'admin123'
         };
 
-        // Data Management
+        // Enhanced Data Management
         class DataManager {
             static setData(key, data) {
                 try {
@@ -738,7 +946,22 @@
                 if (user) {
                     Object.assign(user, updates);
                     this.setData('wavewin_user_' + phone, user);
+                    
+                    // Also update in users collection
+                    const users = this.getData(STORAGE_KEYS.users) || {};
+                    users[phone] = user;
+                    this.setData(STORAGE_KEYS.users, users);
                 }
+            }
+
+            static getOnlineUsers() {
+                const sessions = this.getData(STORAGE_KEYS.userSessions) || {};
+                const now = Date.now();
+                const activeThreshold = 60000; // 1 minute
+                
+                return Object.values(sessions).filter(session => 
+                    session.isActive && (now - session.lastSeen) < activeThreshold
+                ).length;
             }
 
             static createDemoData() {
@@ -746,11 +969,33 @@
                 const users = this.getAllUsers();
                 if (users.length === 0) {
                     const demoUsers = [
-                        { name: 'John Doe', phone: '9876543210', balance: 1500, password: 'demo123' },
-                        { name: 'Jane Smith', phone: '9876543211', balance: 2300, password: 'demo123' },
-                        { name: 'Mike Johnson', phone: '9876543212', balance: 850, password: 'demo123' },
-                        { name: 'Sarah Wilson', phone: '9876543213', balance: 3200, password: 'demo123' },
-                        { name: 'David Brown', phone: '9876543214', balance: 920, password: 'demo123' }
+                        { 
+                            name: 'John Doe', 
+                            phone: '9876543210', 
+                            balance: 1500, 
+                            password: 'demo123',
+                            totalBets: 45,
+                            totalWins: 23,
+                            joinDate: new Date('2024-01-15').toISOString()
+                        },
+                        { 
+                            name: 'Jane Smith', 
+                            phone: '9876543211', 
+                            balance: 2300, 
+                            password: 'demo123',
+                            totalBets: 67,
+                            totalWins: 34,
+                            joinDate: new Date('2024-02-20').toISOString()
+                        },
+                        { 
+                            name: 'Mike Johnson', 
+                            phone: '9876543212', 
+                            balance: 850, 
+                            password: 'demo123',
+                            totalBets: 28,
+                            totalWins: 12,
+                            joinDate: new Date('2024-03-10').toISOString()
+                        }
                     ];
 
                     demoUsers.forEach(user => {
@@ -769,7 +1014,8 @@
                             amount: 500,
                             upi: 'john@paytm',
                             status: 'pending',
-                            date: new Date().toLocaleDateString()
+                            date: new Date().toLocaleDateString(),
+                            time: new Date().toLocaleTimeString()
                         },
                         {
                             id: 'w2',
@@ -778,7 +1024,8 @@
                             amount: 1000,
                             upi: 'jane@gpay',
                             status: 'approved',
-                            date: new Date().toLocaleDateString()
+                            date: new Date().toLocaleDateString(),
+                            time: new Date().toLocaleTimeString()
                         }
                     ];
                     this.setData(STORAGE_KEYS.withdrawals, demoWithdrawals);
@@ -789,16 +1036,24 @@
                 if (deposits.length === 0) {
                     const demoDeposits = [
                         {
+                            id: 'd1',
                             name: 'Mike Johnson',
+                            phone: '9876543212',
                             amount: 2000,
                             utr: 'UTR123456789',
-                            date: new Date().toLocaleDateString()
+                            status: 'completed',
+                            date: new Date().toLocaleDateString(),
+                            time: new Date().toLocaleTimeString()
                         },
                         {
+                            id: 'd2',
                             name: 'Sarah Wilson',
+                            phone: '9876543213',
                             amount: 1500,
                             utr: 'UTR987654321',
-                            date: new Date().toLocaleDateString()
+                            status: 'completed',
+                            date: new Date().toLocaleDateString(),
+                            time: new Date().toLocaleTimeString()
                         }
                     ];
                     this.setData(STORAGE_KEYS.deposits, demoDeposits);
@@ -809,22 +1064,34 @@
                 if (bets.length === 0) {
                     const demoBets = [
                         {
-                            period: '20241201001',
+                            id: 'b1',
+                            period: this.generatePeriod(),
                             playerName: 'John Doe',
-                            type: 'red',
+                            phone: '9876543210',
+                            type: 'color',
+                            value: 'red',
                             amount: 100,
+                            multiplier: 1.96,
                             status: 'win',
-                            winAmount: 200,
-                            date: new Date().toISOString()
+                            winAmount: 196,
+                            date: new Date().toISOString(),
+                            result: 2,
+                            resultColor: 'red'
                         },
                         {
-                            period: '20241201002',
+                            id: 'b2',
+                            period: this.generatePeriod(),
                             playerName: 'Jane Smith',
-                            type: 'green',
+                            phone: '9876543211',
+                            type: 'number',
+                            value: 5,
                             amount: 200,
+                            multiplier: 8.9,
                             status: 'loss',
                             winAmount: 0,
-                            date: new Date().toISOString()
+                            date: new Date().toISOString(),
+                            result: 3,
+                            resultColor: 'green'
                         }
                     ];
                     this.setData(STORAGE_KEYS.bets, demoBets);
@@ -835,22 +1102,67 @@
                 if (results.length === 0) {
                     const demoResults = [
                         {
-                            period: '20241201001',
+                            period: this.generatePeriod() - 1,
                             number: 5,
                             color: 'violet',
-                            type: 'big',
-                            time: new Date().toLocaleTimeString()
+                            size: 'big',
+                            time: new Date().toLocaleTimeString(),
+                            timestamp: Date.now() - 30000
                         },
                         {
-                            period: '20241201002',
+                            period: this.generatePeriod() - 2,
                             number: 2,
                             color: 'red',
-                            type: 'small',
-                            time: new Date().toLocaleTimeString()
+                            size: 'small',
+                            time: new Date().toLocaleTimeString(),
+                            timestamp: Date.now() - 60000
                         }
                     ];
                     this.setData(STORAGE_KEYS.results, demoResults);
                 }
+
+                // Create demo gift codes
+                const giftCodes = this.getData(STORAGE_KEYS.giftCodes) || {};
+                if (Object.keys(giftCodes).length === 0) {
+                    const demoCodes = {
+                        'WELCOME100': {
+                            name: 'Welcome Bonus',
+                            amount: 100,
+                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                            created: new Date().toISOString(),
+                            used: false,
+                            usedBy: null
+                        },
+                        'NEWUSER50': {
+                            name: 'New User Bonus',
+                            amount: 50,
+                            expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                            created: new Date().toISOString(),
+                            used: true,
+                            usedBy: '9876543210'
+                        }
+                    };
+                    this.setData(STORAGE_KEYS.giftCodes, demoCodes);
+                }
+            }
+
+            static generatePeriod() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+                const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+                const roundNumber = Math.floor(totalSeconds / 30) + 1;
+                return parseInt(`${year}${month}${day}${String(roundNumber).padStart(3, '0')}`);
+            }
+
+            static getTimeLeft() {
+                const now = new Date();
+                const seconds = now.getSeconds();
+                return 30 - (seconds % 30);
             }
         }
 
@@ -858,9 +1170,25 @@
         class NotificationManager {
             static show(message, type = 'success') {
                 const notification = document.getElementById('notification');
+                const notificationContent = document.getElementById('notificationContent');
                 const notificationText = document.getElementById('notificationText');
                 
-                notification.className = `fixed top-4 right-4 z-50 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg notification`;
+                const styles = {
+                    success: 'bg-green-500 text-white',
+                    error: 'bg-red-500 text-white',
+                    warning: 'bg-yellow-500 text-black',
+                    info: 'bg-blue-500 text-white'
+                };
+                
+                const icons = {
+                    success: 'fas fa-check-circle',
+                    error: 'fas fa-exclamation-circle',
+                    warning: 'fas fa-exclamation-triangle',
+                    info: 'fas fa-info-circle'
+                };
+
+                notificationContent.className = `px-6 py-3 rounded-lg shadow-lg ${styles[type]}`;
+                notificationContent.querySelector('i').className = `${icons[type]} mr-2`;
                 notificationText.textContent = message;
                 notification.classList.remove('hidden');
 
@@ -875,6 +1203,14 @@
 
             static error(message) {
                 this.show(message, 'error');
+            }
+
+            static warning(message) {
+                this.show(message, 'warning');
+            }
+
+            static info(message) {
+                this.show(message, 'info');
             }
         }
 
@@ -911,7 +1247,9 @@
             setupEventListeners();
             setupMobileMenu();
             updateTime();
+            updateOnlineUsersCount();
             setInterval(updateTime, 1000);
+            setInterval(updateOnlineUsersCount, 5000);
             
             // Check if already logged in
             const savedAdmin = localStorage.getItem('wavewin_admin_session');
@@ -927,6 +1265,20 @@
             const timeElement = document.getElementById('currentTime');
             if (timeElement) {
                 timeElement.textContent = now.toLocaleTimeString();
+            }
+        }
+
+        // Update online users count
+        function updateOnlineUsersCount() {
+            onlineUsersCount = DataManager.getOnlineUsers();
+            const onlineCountElement = document.getElementById('onlineUsersCount');
+            const desktopOnlineElement = document.getElementById('desktopOnlineUsers');
+            
+            if (onlineCountElement) {
+                onlineCountElement.textContent = onlineUsersCount;
+            }
+            if (desktopOnlineElement) {
+                desktopOnlineElement.textContent = onlineUsersCount;
             }
         }
 
@@ -971,10 +1323,16 @@
             document.getElementById('refreshDeposits').addEventListener('click', loadDeposits);
             document.getElementById('refreshGiftCodes').addEventListener('click', loadGiftCodes);
             document.getElementById('refreshBets').addEventListener('click', loadBets);
+            document.getElementById('refreshTodayBets').addEventListener('click', loadTodayBets);
 
             // Search and filters
             document.getElementById('userSearch').addEventListener('input', filterUsers);
             document.getElementById('betStatusFilter').addEventListener('change', filterBets);
+            document.getElementById('betPlayerSearch').addEventListener('input', filterBets);
+            document.getElementById('withdrawalStatusFilter').addEventListener('change', filterWithdrawals);
+            document.getElementById('depositDateFilter').addEventListener('change', filterDeposits);
+            document.getElementById('todayBetStatusFilter').addEventListener('change', filterTodayBets);
+            document.getElementById('todayBetTypeFilter').addEventListener('change', filterTodayBets);
         }
 
         // Handle login
@@ -1006,12 +1364,39 @@
         function handleLogout() {
             localStorage.removeItem('wavewin_admin_session');
             currentAdmin = null;
+            
+            // Stop game timer
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            
+            // Destroy chart instances
+            if (userActivityChartInstance) {
+                userActivityChartInstance.destroy();
+                userActivityChartInstance = null;
+            }
+            if (bettingChartInstance) {
+                bettingChartInstance.destroy();
+                bettingChartInstance = null;
+            }
+            if (betTypeChartInstance) {
+                betTypeChartInstance.destroy();
+                betTypeChartInstance = null;
+            }
+            if (hourlyActivityChartInstance) {
+                hourlyActivityChartInstance.destroy();
+                hourlyActivityChartInstance = null;
+            }
+            
             document.getElementById('loginScreen').classList.remove('hidden');
             document.getElementById('adminDashboard').classList.add('hidden');
             
             // Clear form
             document.getElementById('adminPhone').value = '';
             document.getElementById('adminPassword').value = '';
+            
+            NotificationManager.success('Logged out successfully');
         }
 
         // Show dashboard
@@ -1025,6 +1410,40 @@
             }
             
             loadDashboardData();
+            startGameTimer();
+        }
+
+        // Start game timer
+        function startGameTimer() {
+            if (gameTimer) {
+                clearInterval(gameTimer);
+            }
+            
+            gameTimer = setInterval(() => {
+                updateGameStatus();
+            }, 1000);
+        }
+
+        // Update game status
+        function updateGameStatus() {
+            const currentPeriod = DataManager.generatePeriod();
+            const timeLeft = DataManager.getTimeLeft();
+            
+            document.getElementById('currentPeriod').textContent = currentPeriod;
+            
+            const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const secs = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timeLeft').textContent = `${mins}:${secs}`;
+            
+            // Update active bets count
+            const bets = DataManager.getData(STORAGE_KEYS.bets) || [];
+            const activeBets = bets.filter(b => b.status === 'pending').length;
+            document.getElementById('activeBets').textContent = activeBets;
+            
+            // Update control mode
+            const adminControls = DataManager.getData(STORAGE_KEYS.adminControls) || {};
+            const controlMode = adminControls.nextResult !== undefined ? 'MANUAL' : 'AUTO';
+            document.getElementById('controlMode').textContent = controlMode;
         }
 
         // Switch tabs
@@ -1052,8 +1471,9 @@
                 withdrawals: 'Withdrawal Management',
                 deposits: 'Deposit History',
                 'game-control': 'Game Control',
+                'today-bets': 'Today\'s Bets',
                 giftcodes: 'Gift Code Management',
-                bets: 'Betting Activity'
+                bets: 'All Betting Activity'
             };
             const title = titles[tab] || 'Dashboard';
             document.getElementById('pageTitle').textContent = title;
@@ -1075,6 +1495,9 @@
                     break;
                 case 'game-control':
                     loadGameControl();
+                    break;
+                case 'today-bets':
+                    loadTodayBets();
                     break;
                 case 'giftcodes':
                     loadGiftCodes();
@@ -1105,8 +1528,65 @@
             const todaysBets = bets.filter(b => new Date(b.date).toDateString() === today).length;
             document.getElementById('todaysBets').textContent = todaysBets;
 
+            // Load recent activity
+            loadRecentActivity();
+            
             // Load charts
             loadCharts();
+        }
+
+        // Load recent activity
+        function loadRecentActivity() {
+            const deposits = DataManager.getData(STORAGE_KEYS.deposits) || [];
+            const withdrawals = DataManager.getData(STORAGE_KEYS.withdrawals) || [];
+            
+            // Recent deposits
+            const recentDeposits = deposits.slice(0, 5);
+            const recentDepositsContainer = document.getElementById('recentDeposits');
+            recentDepositsContainer.innerHTML = '';
+            
+            if (recentDeposits.length === 0) {
+                recentDepositsContainer.innerHTML = '<div class="text-gray-400 text-center py-4">No recent deposits</div>';
+            } else {
+                recentDeposits.forEach(deposit => {
+                    const depositDiv = document.createElement('div');
+                    depositDiv.className = 'transaction-card p-3 rounded-lg';
+                    depositDiv.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold text-white">${deposit.name}</div>
+                                <div class="text-sm text-gray-400">${deposit.date}</div>
+                            </div>
+                            <div class="text-green-400 font-semibold">+₹${deposit.amount}</div>
+                        </div>
+                    `;
+                    recentDepositsContainer.appendChild(depositDiv);
+                });
+            }
+            
+            // Recent withdrawals
+            const recentWithdrawals = withdrawals.slice(0, 5);
+            const recentWithdrawalsContainer = document.getElementById('recentWithdrawals');
+            recentWithdrawalsContainer.innerHTML = '';
+            
+            if (recentWithdrawals.length === 0) {
+                recentWithdrawalsContainer.innerHTML = '<div class="text-gray-400 text-center py-4">No recent withdrawals</div>';
+            } else {
+                recentWithdrawals.forEach(withdrawal => {
+                    const withdrawalDiv = document.createElement('div');
+                    withdrawalDiv.className = 'withdrawal-card p-3 rounded-lg';
+                    withdrawalDiv.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold text-white">${withdrawal.name}</div>
+                                <div class="text-sm text-gray-400">${withdrawal.date}</div>
+                            </div>
+                            <div class="text-red-400 font-semibold">-₹${withdrawal.amount}</div>
+                        </div>
+                    `;
+                    recentWithdrawalsContainer.appendChild(withdrawalDiv);
+                });
+            }
         }
 
         // Load charts
@@ -1213,9 +1693,8 @@
                     <td class="py-3 px-4 text-white">${user.name}</td>
                     <td class="py-3 px-4 text-white">${user.phone}</td>
                     <td class="py-3 px-4 text-white">₹${(user.balance || 0).toFixed(2)}</td>
-                    <td class="py-3 px-4">
-                        <span class="status-approved px-2 py-1 rounded-full text-xs">Active</span>
-                    </td>
+                    <td class="py-3 px-4 text-white">${user.totalBets || 0}</td>
+                    <td class="py-3 px-4 text-white">${user.joinDate ? new Date(user.joinDate).toLocaleDateString() : 'N/A'}</td>
                     <td class="py-3 px-4">
                         <button class="btn-primary text-white px-3 py-1 rounded text-sm" onclick="openBalanceModal('${user.phone}', '${user.name}', ${user.balance || 0})">
                             <i class="fas fa-wallet mr-1"></i>Balance
@@ -1295,6 +1774,7 @@
                 row.innerHTML = `
                     <td class="py-3 px-4 text-white">${withdrawal.date}</td>
                     <td class="py-3 px-4 text-white">${withdrawal.name}</td>
+                    <td class="py-3 px-4 text-white">${withdrawal.phone}</td>
                     <td class="py-3 px-4 text-white">₹${withdrawal.amount.toFixed(2)}</td>
                     <td class="py-3 px-4 text-white">${withdrawal.upi}</td>
                     <td class="py-3 px-4">
@@ -1314,6 +1794,14 @@
                 
                 tbody.appendChild(row);
             });
+        }
+
+        // Filter withdrawals
+        function filterWithdrawals() {
+            const status = document.getElementById('withdrawalStatusFilter').value;
+            const allWithdrawals = DataManager.getData(STORAGE_KEYS.withdrawals) || [];
+            const filtered = status ? allWithdrawals.filter(w => w.status === status) : allWithdrawals;
+            displayWithdrawals(filtered);
         }
 
         // Approve withdrawal
@@ -1372,48 +1860,36 @@
                 row.innerHTML = `
                     <td class="py-3 px-4 text-white">${deposit.date}</td>
                     <td class="py-3 px-4 text-white">${deposit.name}</td>
+                    <td class="py-3 px-4 text-white">${deposit.phone || 'N/A'}</td>
                     <td class="py-3 px-4 text-white">₹${deposit.amount.toFixed(2)}</td>
                     <td class="py-3 px-4 text-white">${deposit.utr}</td>
                     <td class="py-3 px-4">
-                        <span class="status-approved px-2 py-1 rounded-full text-xs">COMPLETED</span>
+                        <span class="status-completed px-2 py-1 rounded-full text-xs">COMPLETED</span>
                     </td>
+                    <td class="py-3 px-4 text-white">${deposit.time || 'N/A'}</td>
                 `;
                 
                 tbody.appendChild(row);
             });
         }
 
-        // Load game control
-        function loadGameControl() {
-            updateGameStatus();
-            setInterval(updateGameStatus, 1000);
-            loadGameResults();
+        // Filter deposits
+        function filterDeposits() {
+            const dateFilter = document.getElementById('depositDateFilter').value;
+            const allDeposits = DataManager.getData(STORAGE_KEYS.deposits) || [];
+            
+            let filtered = allDeposits;
+            if (dateFilter) {
+                const filterDate = new Date(dateFilter).toLocaleDateString();
+                filtered = allDeposits.filter(d => d.date === filterDate);
+            }
+            
+            displayDeposits(filtered);
         }
 
-        // Update game status
-        function updateGameStatus() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-            const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-            const roundNumber = Math.floor(totalSeconds / 30);
-            const currentPeriod = parseInt(`${year}${month}${day}${String(roundNumber).padStart(3, '0')}`);
-            
-            document.getElementById('currentPeriod').textContent = currentPeriod;
-            
-            const countdown = 30 - (totalSeconds % 30);
-            const mins = Math.floor(countdown / 60).toString().padStart(2, '0');
-            const secs = (countdown % 60).toString().padStart(2, '0');
-            document.getElementById('timeLeft').textContent = `${mins}:${secs}`;
-            
-            // Update active bets count
-            const bets = DataManager.getData(STORAGE_KEYS.bets) || [];
-            const activeBets = bets.filter(b => b.status === 'pending').length;
-            document.getElementById('activeBets').textContent = activeBets;
+        // Load game control
+        function loadGameControl() {
+            loadGameResults();
         }
 
         // Load game results
@@ -1433,6 +1909,10 @@
                 
                 const colorBackground = getColorBackground(result.color);
                 
+                // Get bet count for this period
+                const bets = DataManager.getData(STORAGE_KEYS.bets) || [];
+                const periodBets = bets.filter(b => b.period === result.period);
+                
                 row.innerHTML = `
                     <td class="py-3 px-4 text-white">${result.period}</td>
                     <td class="py-3 px-4">
@@ -1444,11 +1924,12 @@
                         </span>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-1 rounded-full text-xs ${result.type === 'big' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}">
-                            ${result.type.toUpperCase()}
+                        <span class="px-2 py-1 rounded-full text-xs ${result.size === 'big' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}">
+                            ${result.size.toUpperCase()}
                         </span>
                     </td>
                     <td class="py-3 px-4 text-white">${result.time || 'N/A'}</td>
+                    <td class="py-3 px-4 text-white">${periodBets.length}</td>
                 `;
                 
                 tbody.appendChild(row);
@@ -1488,6 +1969,185 @@
             document.getElementById('nextResult').value = '';
             DataManager.setData(STORAGE_KEYS.adminControls, {});
             NotificationManager.success('Game reset to auto mode');
+        }
+
+        // Load today's bets
+        function loadTodayBets() {
+            const bets = DataManager.getData(STORAGE_KEYS.bets) || [];
+            const today = new Date().toDateString();
+            const todayBets = bets.filter(b => new Date(b.date).toDateString() === today);
+            
+            // Update stats
+            const totalBets = todayBets.length;
+            const totalAmount = todayBets.reduce((sum, bet) => sum + bet.amount, 0);
+            const winAmount = todayBets.reduce((sum, bet) => sum + (bet.winAmount || 0), 0);
+            const profit = totalAmount - winAmount;
+            
+            document.getElementById('todayTotalBets').textContent = totalBets;
+            document.getElementById('todayTotalAmount').textContent = `₹${totalAmount.toFixed(2)}`;
+            document.getElementById('todayWinAmount').textContent = `₹${winAmount.toFixed(2)}`;
+            document.getElementById('todayProfit').textContent = `₹${profit.toFixed(2)}`;
+            
+            // Load charts
+            loadTodayCharts(todayBets);
+            
+            // Display bets
+            displayTodayBets(todayBets);
+        }
+
+        // Load today's charts
+        function loadTodayCharts(todayBets) {
+            // Destroy existing chart instances
+            if (betTypeChartInstance) {
+                betTypeChartInstance.destroy();
+            }
+            if (hourlyActivityChartInstance) {
+                hourlyActivityChartInstance.destroy();
+            }
+
+            // Bet Type Distribution Chart
+            const betTypeCtx = document.getElementById('betTypeChart');
+            if (betTypeCtx) {
+                const betTypes = todayBets.reduce((acc, bet) => {
+                    const key = bet.type;
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                betTypeChartInstance = new Chart(betTypeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(betTypes),
+                        datasets: [{
+                            data: Object.values(betTypes),
+                            backgroundColor: [
+                                '#e60000',
+                                '#10b981',
+                                '#8b5cf6',
+                                '#f59e0b',
+                                '#3b82f6'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Hourly Activity Chart
+            const hourlyCtx = document.getElementById('hourlyActivityChart');
+            if (hourlyCtx) {
+                const hourlyData = new Array(24).fill(0);
+                todayBets.forEach(bet => {
+                    const hour = new Date(bet.date).getHours();
+                    hourlyData[hour]++;
+                });
+                
+                hourlyActivityChartInstance = new Chart(hourlyCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                        datasets: [{
+                            label: 'Bets',
+                            data: hourlyData,
+                            backgroundColor: '#e60000',
+                            borderColor: '#ff3333',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#fff'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    color: '#fff'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#fff'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Display today's bets
+        function displayTodayBets(bets) {
+            const tbody = document.getElementById('todayBetsTableBody');
+            tbody.innerHTML = '';
+
+            bets.forEach(bet => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-600 hover:bg-gray-700';
+                
+                const statusClass = bet.status === 'pending' ? 'status-pending' : 
+                                  bet.status === 'win' ? 'status-approved' : 'status-rejected';
+                
+                // Create bet details display
+                let betDetails = '';
+                if (bet.type === 'color') {
+                    betDetails = `<span class="bet-type-${bet.value} px-2 py-1 rounded text-xs">${bet.value.toUpperCase()}</span>`;
+                } else if (bet.type === 'number') {
+                    betDetails = `<span class="bet-type-number px-2 py-1 rounded text-xs">NUMBER ${bet.value}</span>`;
+                } else if (bet.type === 'size') {
+                    betDetails = `<span class="bet-type-size px-2 py-1 rounded text-xs">${bet.value.toUpperCase()}</span>`;
+                }
+                
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-white">${bet.period}</td>
+                    <td class="py-3 px-4 text-white">${bet.playerName}</td>
+                    <td class="py-3 px-4">${betDetails}</td>
+                    <td class="py-3 px-4 text-white">₹${bet.amount.toFixed(2)}</td>
+                    <td class="py-3 px-4">
+                        <span class="${statusClass} px-2 py-1 rounded-full text-xs">${bet.status.toUpperCase()}</span>
+                    </td>
+                    <td class="py-3 px-4 text-white">₹${(bet.winAmount || 0).toFixed(2)}</td>
+                    <td class="py-3 px-4 text-white">${new Date(bet.date).toLocaleTimeString()}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Filter today's bets
+        function filterTodayBets() {
+            const statusFilter = document.getElementById('todayBetStatusFilter').value;
+            const typeFilter = document.getElementById('todayBetTypeFilter').value;
+            
+            const bets = DataManager.getData(STORAGE_KEYS.bets) || [];
+            const today = new Date().toDateString();
+            let todayBets = bets.filter(b => new Date(b.date).toDateString() === today);
+            
+            if (statusFilter) {
+                todayBets = todayBets.filter(b => b.status === statusFilter);
+            }
+            
+            if (typeFilter) {
+                todayBets = todayBets.filter(b => b.type === typeFilter);
+            }
+            
+            displayTodayBets(todayBets);
         }
 
         // Generate gift code
@@ -1564,6 +2224,7 @@
                     </td>
                     <td class="py-3 px-4 text-white">${giftCode.usedBy || '-'}</td>
                     <td class="py-3 px-4 text-white">${new Date(giftCode.created).toLocaleDateString()}</td>
+                    <td class="py-3 px-4 text-white">${new Date(giftCode.expiry).toLocaleDateString()}</td>
                     <td class="py-3 px-4">
                         ${!giftCode.used ? `
                             <button class="btn-danger text-white px-2 py-1 rounded text-xs" onclick="deactivateGiftCode('${giftCode.code}')">
@@ -1582,10 +2243,12 @@
             const activeCodes = codes.filter(c => !c.used).length;
             const usedCodes = codes.filter(c => c.used).length;
             const totalValue = codes.filter(c => !c.used).reduce((sum, c) => sum + c.amount, 0);
+            const redeemedValue = codes.filter(c => c.used).reduce((sum, c) => sum + c.amount, 0);
             
             document.getElementById('activeCodes').textContent = activeCodes;
             document.getElementById('usedCodes').textContent = usedCodes;
             document.getElementById('totalGiftValue').textContent = `₹${totalValue.toFixed(2)}`;
+            document.getElementById('redeemedGiftValue').textContent = `₹${redeemedValue.toFixed(2)}`;
         }
 
         // Deactivate gift code
@@ -1612,17 +2275,27 @@
             const tbody = document.getElementById('betsTableBody');
             tbody.innerHTML = '';
 
-            bets.slice(0, 50).forEach(bet => {
+            bets.slice(0, 100).forEach(bet => {
                 const row = document.createElement('tr');
                 row.className = 'border-b border-gray-600 hover:bg-gray-700';
                 
                 const statusClass = bet.status === 'pending' ? 'status-pending' : 
                                   bet.status === 'win' ? 'status-approved' : 'status-rejected';
                 
+                // Create bet details display
+                let betDetails = '';
+                if (bet.type === 'color') {
+                    betDetails = `<span class="bet-type-${bet.value} px-2 py-1 rounded text-xs">${bet.value.toUpperCase()}</span>`;
+                } else if (bet.type === 'number') {
+                    betDetails = `<span class="bet-type-number px-2 py-1 rounded text-xs">NUMBER ${bet.value}</span>`;
+                } else if (bet.type === 'size') {
+                    betDetails = `<span class="bet-type-size px-2 py-1 rounded text-xs">${bet.value.toUpperCase()}</span>`;
+                }
+                
                 row.innerHTML = `
                     <td class="py-3 px-4 text-white">${bet.period}</td>
                     <td class="py-3 px-4 text-white">${bet.playerName}</td>
-                    <td class="py-3 px-4 text-white">${bet.type.toUpperCase()}</td>
+                    <td class="py-3 px-4">${betDetails}</td>
                     <td class="py-3 px-4 text-white">₹${bet.amount.toFixed(2)}</td>
                     <td class="py-3 px-4">
                         <span class="${statusClass} px-2 py-1 rounded-full text-xs">${bet.status.toUpperCase()}</span>
@@ -1637,9 +2310,23 @@
 
         // Filter bets
         function filterBets() {
-            const status = document.getElementById('betStatusFilter').value;
+            const statusFilter = document.getElementById('betStatusFilter').value;
+            const playerSearch = document.getElementById('betPlayerSearch').value.toLowerCase();
+            
             const allBets = DataManager.getData(STORAGE_KEYS.bets) || [];
-            const filtered = status ? allBets.filter(bet => bet.status === status) : allBets;
+            let filtered = allBets;
+            
+            if (statusFilter) {
+                filtered = filtered.filter(bet => bet.status === statusFilter);
+            }
+            
+            if (playerSearch) {
+                filtered = filtered.filter(bet => 
+                    bet.playerName.toLowerCase().includes(playerSearch) ||
+                    bet.phone.includes(playerSearch)
+                );
+            }
+            
             displayBets(filtered);
         }
 
@@ -1655,6 +2342,9 @@
         // Listen for storage changes (real-time sync)
         window.addEventListener('storage', (e) => {
             if (e.key && e.key.startsWith('wavewin_')) {
+                // Update online users count
+                updateOnlineUsersCount();
+                
                 // Refresh current tab data
                 switch(currentTab) {
                     case 'dashboard':
@@ -1672,12 +2362,51 @@
                     case 'game-control':
                         loadGameResults();
                         break;
+                    case 'today-bets':
+                        loadTodayBets();
+                        break;
                     case 'giftcodes':
                         loadGiftCodes();
                         break;
                     case 'bets':
                         loadBets();
                         break;
+                }
+            }
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // Page is visible, refresh data
+                updateOnlineUsersCount();
+                if (currentTab) {
+                    switch(currentTab) {
+                        case 'dashboard':
+                            loadDashboardData();
+                            break;
+                        case 'users':
+                            loadUsers();
+                            break;
+                        case 'withdrawals':
+                            loadWithdrawals();
+                            break;
+                        case 'deposits':
+                            loadDeposits();
+                            break;
+                        case 'game-control':
+                            loadGameResults();
+                            break;
+                        case 'today-bets':
+                            loadTodayBets();
+                            break;
+                        case 'giftcodes':
+                            loadGiftCodes();
+                            break;
+                        case 'bets':
+                            loadBets();
+                            break;
+                    }
                 }
             }
         });
